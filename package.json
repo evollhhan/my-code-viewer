@@ -1,0 +1,48 @@
+{
+  "name": "my-code-viewer",
+  "version": "0.1.0",
+  "description": "view code in html.",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "webpack-dev-server --mode development --inline --progress --config webpack.config.js",
+    "build": "node build/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evollhhan/my-code-viewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/evollhhan/my-code-viewer/issues"
+  },
+  "homepage": "https://github.com/evollhhan/my-code-viewer#readme",
+  "types": "./global.d.ts",
+  "author": "Pathen",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "global.d.ts"
+  ],
+  "devDependencies": {
+    "@types/highlight.js": "^9.12.3",
+    "chalk": "^2.4.2",
+    "css-loader": "^3.2.0",
+    "friendly-errors-webpack-plugin": "^1.7.0",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.8.0",
+    "node-sass": "^4.12.0",
+    "ora": "^3.4.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "sass": "^1.23.0",
+    "sass-loader": "^8.0.0",
+    "style-loader": "^1.0.0",
+    "ts-loader": "^6.0.4",
+    "typescript": "^3.5.3",
+    "webpack": "^4.38.0",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.0"
+  },
+  "dependencies": {
+    "highlight.js": "^9.15.10"
+  }
+}
