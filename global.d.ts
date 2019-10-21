@@ -7,9 +7,10 @@ interface IFile {
   filePath?: string;
 }
 
-declare class Codeviewer {
+declare var Codeviewer: {
+  new (): typeof Codeviewer;
   rootNode: HTMLElement;
-  loadFiles(files: IFile[]);
+  loadFiles(files: IFile[]): void;
 }
 
 export = Codeviewer;

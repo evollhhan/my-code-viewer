@@ -5,7 +5,7 @@
 ## Usage
 ```typescript
 import CodeViewer from 'my-code-viewer';
-import 'my-code-viewer/style.css';
+import 'my-code-viewer/dist/style.css';
 
 // 1. create a viewer instance.
 const viewer = new Codeviewer();
