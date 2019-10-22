@@ -1,6 +1,6 @@
 {
   "name": "my-code-viewer",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "description": "view code in html.",
   "main": "dist/main.js",
   "scripts": {
