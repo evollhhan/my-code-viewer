@@ -18,6 +18,9 @@ document.body.appendChild(viewer.rootNode);
 ```
 
 ## File Data Structure
+
+You can view the example file in src/data.json.
+
 ```typescript
 interface IFile {
   // your filename
@@ -34,12 +37,12 @@ interface IFile {
 ```
 
 ## Current Lang Support
-  1. Typescript
-  2. Javascript
-  3. Stylus
-  4. Sass
-  5. Less
-  6. Glsl
+  1. typescript
+  2. javascript
+  3. stylus
+  4. scss
+  5. less
+  6. glsl
 
 ## Road Map
   1. customize lang support and style.
