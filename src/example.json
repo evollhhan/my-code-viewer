@@ -1,0 +1,97 @@
+[
+  {
+    "filename": "build",
+    "dir": true,
+    "children": [
+      {
+        "filename": "doc.js",
+        "lang": "javascript",
+        "data": "'use strict'\nconst ora = require('ora');\nconst webpack = require('webpack');\nconst webpackConfig = require('../webpack.config')({}, { mode: 'production' });\nconst spinner = ora('building for production...');\nconst print = require('./print');\nspinner.start();\nwebpack(webpackConfig, (err, stats) => {\n  spinner.stop();\n  print(err, stats);\n});\n"
+      },
+      {
+        "filename": "index.js",
+        "lang": "javascript",
+        "data": "'use strict'\nconst ora = require('ora');\nconst chalk = require('chalk');\nconst webpack = require('webpack');\nconst webpackConfig = require('./lib.config')({}, { mode: 'production' });\nconst spinner = ora('building for production...');\nconst print = require('./print');\nspinner.start();\n\n// 1. Build Lib\nconsole.log(chalk.yellow(`\n  [1/2] Start Build Lib.\n`));\n\nwebpack(webpackConfig, (err, stats) => {\n  spinner.stop();\n  print(err, stats);\n\n  // 2. Build Extension\n  console.log(chalk.yellow(`\n  [2/2]Start Build Extension.\n`));\n  webpack(require('./lib.ext.config'), print);\n});\n"
+      },
+      {
+        "filename": "lib.config.js",
+        "lang": "javascript",
+        "data": "const path = require('path');\nconst rules = require('./rules');\nconst webpack = require('webpack')\nconst MiniCssExtractPlugin = require('mini-css-extract-plugin');\nconst FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin');\n\n//\n// This is a build config for codeviewer.\n//\n\n// OUTPUT_PATH\nconst resolve = p => path.resolve(__dirname, p);\nconst PATH_DIST = resolve('../dist');\n\nmodule.exports = (env, argv) => {\n  return {\n    entry: './src/core/index.ts',\n    mode: argv.mode,\n    output: {\n      path: PATH_DIST,\n      filename: '[name].js',\n      publicPath: '/',\n      libraryTarget: 'umd',\n      library: 'CodeViewer'\n    },\n    devtool: false,\n    resolve: {\n      extensions: ['.js', '.ts', '.json']\n    },\n    module: {\n      rules: rules(true)\n    },\n    plugins: [\n      new webpack.NoEmitOnErrorsPlugin(),\n      new webpack.NamedModulesPlugin(),\n      new webpack.DefinePlugin({ 'process.env.NODE_ENV': '\"production\"' }),\n      new MiniCssExtractPlugin({ filename: '[name].css' }),\n      new FriendlyErrorsPlugin()\n    ]\n  }\n}"
+      },
+      {
+        "filename": "lib.ext.config.js",
+        "lang": "javascript",
+        "data": "const path = require('path');\nconst chalk = require('chalk');\nconst rules = require('./rules');\nconst webpack = require('webpack')\nconst MiniCssExtractPlugin = require('mini-css-extract-plugin');\nconst FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin');\n\n//\n// This is a build config for highlight.js extension.\n//\n\n// OUTPUT_PATH\nconst resolve = p => path.resolve(__dirname, p);\nconst PATH_DIST = resolve('../dist');\n\nmodule.exports = {\n  entry: './src/extend/lang-support.ts',\n  mode: 'production',\n  output: {\n    path: PATH_DIST,\n    filename: 'hl.web.js',\n    publicPath: '/',\n    libraryTarget: 'umd',\n    library: 'HL'\n  },\n  devtool: false,\n  resolve: {\n    extensions: ['.js', '.ts', '.json']\n  },\n  module: {\n    rules: rules(true)\n  },\n  plugins: [\n    new webpack.NoEmitOnErrorsPlugin(),\n    new webpack.NamedModulesPlugin(),\n    new webpack.DefinePlugin({ 'process.env.NODE_ENV': '\"production\"' }),\n    new MiniCssExtractPlugin({ filename: 'hl.web.css' }),\n    new FriendlyErrorsPlugin()\n  ]\n}\n"
+      },
+      {
+        "filename": "local-example.js",
+        "lang": "javascript",
+        "data": "const path = require('path');\nconst fileSearcher = require('../tools/file-searcher');\n\nconst OUTPUT_DIR = path.resolve(__dirname, '../src');\nconst OUTPUT_FILENAME = 'example.json';\nconst BASE_URL = path.resolve(__dirname, '../');\nconst INCLUDE = [\n  'package.json',\n  'tools',\n  'build',\n  'src'\n]\n\n// fileSearcher.addRules('json', /\\.json$/);\nfileSearcher.makeList(INCLUDE, BASE_URL)\n  .toFile(OUTPUT_DIR, OUTPUT_FILENAME);"
+      },
+      {
+        "filename": "print.js",
+        "lang": "javascript",
+        "data": "const chalk = require('chalk');\n\nmodule.exports = (err, stats) => {\n  if (err) throw err;\n  process.stdout.write(stats.toString({\n    colors: true,\n    children: false,\n    modules: false,\n    chunks: false,\n    chunkModules: false\n  }) + '\\n\\n');\n\n  if (stats.hasErrors()) {\n    console.log(chalk.red('  Build failed with errors.\\n'));\n    process.exit(1);\n  }\n\n  console.log(chalk.cyan('  Build complete.\\n'));\n}\n"
+      },
+      {
+        "filename": "rules.js",
+        "lang": "javascript",
+        "data": "const MiniCssExtractPlugin = require('mini-css-extract-plugin');\n\nmodule.exports = (IS_PROD) => [\n  {\n    test: /\\.tsx?$/,\n    exclude: /node_modules/,\n    use: [{\n      loader: 'ts-loader',\n      options: {\n        transpileOnly: true\n      }\n    }]\n  },\n  {\n    test: /\\.(scss|css)$/,\n    oneOf: [\n      {\n        resourceQuery: /raw/,\n        use: [\n          IS_PROD ? MiniCssExtractPlugin.loader : 'style-loader',\n          'css-loader',\n          'sass-loader'\n        ]\n      },\n      {\n        use: [\n          IS_PROD ? MiniCssExtractPlugin.loader : 'style-loader',\n          {\n            loader: 'css-loader',\n            options: {\n              modules: {\n                localIdentName: IS_PROD ? '[hash:base64]' : '[hash:base64:4]_[local]'\n              }\n            },\n          },\n          'sass-loader'\n        ]\n      }\n    ]\n  }\n];"
+      }
+    ]
+  },
+  {
+    "filename": "src",
+    "dir": true,
+    "children": [
+      {
+        "filename": "core",
+        "dir": true,
+        "children": [
+          {
+            "filename": "index.scss",
+            "lang": "scss",
+            "data": ".code-viewer {\n  display: flex;\n  width: 100%;\n  height: 100%;\n  line-height: 1.5;\n  font-size: 16px;\n  color: #fff;\n  background: #282c34;\n  overflow: hidden;\n\n  .section-title {\n    display: flex;\n    justify-content: space-between;\n    padding: 4px 12px;\n    background: #1a1c21;\n    font-size: 14px;\n    box-sizing: border-box;\n    color: rgba(255, 255, 255, .4);\n    border-top: 2px solid rgba(0, 0, 0, .2);\n    border-bottom: 2px solid rgba(0, 0, 0, .2);\n    user-select: none;\n\n    &.filename {\n      span:first-child {\n        white-space: nowrap;\n        text-overflow: ellipsis;\n        overflow: hidden;\n        flex-grow: 1;\n        width: 100%;\n      }\n      span:last-child {\n        width: 100px;\n        text-align: right;\n      }\n    }\n  }\n\n  .code-area {\n    display: flex;\n    flex-direction: column;\n    width: 100%;\n    height: 100%;\n    flex-shrink: 1;\n    overflow: scroll;\n\n    > pre {\n      flex-shrink: 1;\n    }\n  }\n\n  pre {\n    margin: 0;\n    padding: .5em 1em;\n    width: 100%;\n    height: 100%;\n    box-sizing: border-box;\n    overflow: scroll;\n  }\n\n  pre, code {\n    white-space: pre;\n    overflow-x: scroll;\n  }\n\n  .sidebar {\n    display: flex;\n    flex-direction: column;\n    width: 240px;\n    height: 100%;\n    background: #1e2229;\n    border-right: 2px solid rgba(0, 0, 0, .2);\n  }\n\n  .dir {\n    display: flex;\n    flex-direction: column;\n    flex-grow: 1;\n    overflow: scroll;\n\n    > ul {\n      width: 100%;\n      height: 100%;\n      overflow: scroll;\n    }\n  }\n\n  ul, li {\n    margin: 0;\n    padding: 0;\n  }\n\n  ul {\n    color: rgba(255, 255, 255, .76);\n    font-size: 13px;\n  }\n\n  li {\n    padding: .4em 0;\n    white-space: nowrap;\n    list-style: none;\n    cursor: pointer;\n    user-select: none;\n    width: max-content;\n    min-width: 100%;\n    box-sizing: border-box;\n    &:hover {\n      color: rgba(255, 255, 255, 1);\n      background: rgba(0, 0, 0, .1);\n    }\n  }\n\n  li[data-role=dir] {\n    font-weight: 600;\n\n    &::before {\n      content: '+';\n      margin-right: .2em;\n    }\n  }\n\n  li[data-role=file] {\n    font-weight: 300;\n  }\n\n  li[data-fold=\"1\"] > ul {\n    display: none;\n  }\n\n  li[data-fold=\"0\"] {\n    padding-bottom: 0;\n\n    &::before {\n      content: '-';\n      margin-right: .2em;\n    }\n\n    > ul {\n      padding-bottom: 0;\n    }\n  }\n}"
+          },
+          {
+            "filename": "index.ts",
+            "lang": "typescript",
+            "data": "import './index.scss?raw';\n\ninterface IRenderOptions {\n  filename?: string;\n  lang?: string;\n}\n\ninterface IFile {\n  filename: string;\n  lang?: string;\n  dir?: boolean;\n  data?: string;\n  children?: IFile[];\n  filePath?: string;\n}\n\ninterface IFileElementAttribute {\n  role: string;\n  path: string;\n  fold?: string;\n}\n\ntype IRenderer = (ele: HTMLPreElement, ...args: any[]) => void;\n\nexport default class Codeviewer {\n  public rootNode: HTMLElement;\n  public renderer: IRenderer | undefined | null;\n  private content: HTMLPreElement;\n  private currentTitle: HTMLElement;\n  private currentType: HTMLElement;\n  private listElement: HTMLUListElement;\n  private list: {\n    [index: string]: IFile\n  } = {};\n\n  constructor() {\n    const rootNode = document.createElement('div');\n    rootNode.className = 'code-viewer';\n    rootNode.innerHTML = `\n      <div class=\"sidebar\">\n        <div class=\"dir\">\n          <div class=\"section-title\">Files</div>\n          <ul></ul>\n        </div>\n      </div>\n      <div class=\"code-area\">\n        <div class=\"section-title filename\">\n          <span>Untitled</span>\n          <span>unknown</span>\n        </div>\n        <pre></pre>\n      </div>\n    `;\n    this.content = rootNode.querySelector('pre')!;\n    this.listElement = rootNode.querySelector('ul')! as HTMLUListElement;\n    const titleAreaNodes = rootNode.querySelectorAll('.filename span');\n    this.currentTitle = titleAreaNodes[0] as HTMLElement;\n    this.currentType = titleAreaNodes[1] as HTMLElement;\n    this.rootNode = rootNode;\n    this.bindEvents();\n  }\n\n  private bindEvents() {\n    this.listElement.addEventListener('click', (e: any) => this.onFileClicked(e.target));\n  }\n\n  private onFileClicked(target: HTMLElement) {\n    const data: IFileElementAttribute = (target.dataset as any);\n    switch (data.role) {\n      case 'dir':\n        target.setAttribute('data-fold', data.fold === '1' ? '0' : '1');\n        break;\n      case 'file':\n        const file = this.list[data.path!];\n        this.render(file.data, {\n          ...file,\n          filename: file.filePath\n        });\n        break;\n      default: break;\n    }\n  }\n\n  private createFileNode(file: IFile, depth: number) {\n    const node = document.createElement('li');\n    node.className = 'file-node';\n    node.style.textIndent = depth + 'em';\n    node.setAttribute('data-path', file.filePath!);\n    node.textContent = file.filename;\n    if (file.dir) {\n      node.setAttribute('data-role', 'dir');\n      node.setAttribute('data-fold', '1');\n      if (file.children && file.children.length) {\n        const ul = document.createElement('ul');\n        this.parse(file.children, ul, file.filePath + '/', depth + 1);\n        node.appendChild(ul);\n      }\n    } else {\n      node.setAttribute('data-role', 'file');\n    }\n    return node;\n  }\n\n  private parse(files: IFile[], parent: HTMLElement | DocumentFragment, fromPath: string, depth: number) {\n    files.map(file => {\n      const path = fromPath + file.filename;\n      this.list[path] = file;\n      file.filePath = path;\n      parent.appendChild(this.createFileNode(file, depth));\n    });\n  }\n\n  useRenderer (renderer: IRenderer) {\n    this.renderer = renderer;\n  }\n\n  loadFiles(files: IFile[]) {\n    const frag = document.createDocumentFragment();\n    this.parse(files, frag, '/', 1);\n    this.listElement.appendChild(frag);\n  }\n\n  render(codeText?: string, opt?: IRenderOptions) {\n    if (!codeText) return;\n    opt = {\n      ...{ filename: 'Untitled.ts', lang: 'unknown' },\n      ...opt\n    }\n    this.content.className = opt.lang!;\n    this.content.innerHTML = codeText;\n    this.currentTitle.textContent = opt.filename!;\n    this.currentType.textContent = opt.lang || 'unknown';\n    if (this.renderer) {\n      this.renderer(this.content);\n    }\n  }\n}\n"
+          }
+        ]
+      },
+      {
+        "filename": "extend",
+        "dir": true,
+        "children": [
+          {
+            "filename": "lang-support.ts",
+            "lang": "typescript",
+            "data": "import HL from 'highlight.js/lib/highlight';\nimport HL_typescript from 'highlight.js/lib/languages/typescript';\nimport HL_javascript from 'highlight.js/lib/languages/javascript';\nimport HL_stylus from 'highlight.js/lib/languages/stylus';\nimport HL_less from 'highlight.js/lib/languages/less';\nimport HL_scss from 'highlight.js/lib/languages/scss';\nimport HL_glsl from 'highlight.js/lib/languages/glsl';\nimport HL_json from 'highlight.js/lib/languages/json';\nimport 'highlight.js/styles/atom-one-dark.css?raw';\n\nHL.registerLanguage('javascript', HL_typescript);\nHL.registerLanguage('javascript', HL_javascript);\nHL.registerLanguage('stylus', HL_stylus);\nHL.registerLanguage('less', HL_less);\nHL.registerLanguage('scss', HL_scss);\nHL.registerLanguage('glsl', HL_glsl);\nHL.registerLanguage('json', HL_json);\n\nexport default HL;\n"
+          }
+        ]
+      },
+      {
+        "filename": "index.ts",
+        "lang": "typescript",
+        "data": "import Codeviewer from './core';\nimport HL from './extend/lang-support';\nimport TEST_FILES from './example.json';\n\n//\n// DEMO\n// ----\n\n// 1. create a viewer instance.\nconst viewer = new Codeviewer();\n\n// 2. init with a renderer.\n// you can use either built-in highlight.js-for-web renderer or your customer renderer\nviewer.useRenderer(HL.highlightBlock);\n\n//\n// 3. load all files from a json file.\nviewer.loadFiles(TEST_FILES);\n\n//\n// TODO START!\n// = Custom Way =\n// load list from somewhere ,listen to the event & render the content.\n// viewer.loadList(...);\n// viewer.onFileClicked = function (file) {\n//   viewer.render(...)\n// }\n// TODO END!\n\n// 4. append element to the document.\ndocument.body.appendChild(viewer.rootNode);\n"
+      }
+    ]
+  },
+  {
+    "filename": "tools",
+    "dir": true,
+    "children": [
+      {
+        "filename": "file-searcher.js",
+        "lang": "javascript",
+        "data": "const fs = require('fs');\nconst path = require('path');\n\n/**\n * @typedef {{\n *  filename: string;\n *  lang?: string;\n *  data?: string;\n *  dir?: boolean;\n *  children?: IFile[];\n * }} IFile\n */\n\n/**\n * @type {{[index:string]: RegExp}}\n */\nconst MIME_TYPE = {\n  typescript: /\\.tsx?$/,\n  javascript: /\\.js$/,\n  scss: /\\.scss$/,\n  less: /\\.less$/,\n  stylus: /\\.stylus$/,\n  json: /\\.json$/,\n}\n\n/**\n * @param {IFile} a \n * @param {IFile} b \n */\nfunction sortFiles (a, b) {\n  if (!a || !b) return 0;\n  if (a.dir && !b.dir) return -1;\n  if (!a.dir && b.dir) return 1;\n  return a.filename < b.filename ? -1 : 1;\n}\n\n/**\n * @param {string[]} files\n * @param {IFile[]} parentList\n * @param {string=} baseURL\n */\nfunction searchFiles (files, parentList, baseURL) {\n  files.map(filename => {\n    /** @type {IFile} */\n    const conf = { filename };\n    parentList.push(conf);\n    const filePath = path.resolve(baseURL || '', filename);\n    const stats = fs.lstatSync(filePath);\n    if (stats.isDirectory()) {\n      conf.dir = true;\n      ReadDir(filePath, conf);\n    } else {\n      ReadFile(filePath, conf);\n    }\n  })\n}\n\n/**\n * @param {string} filePath \n * @param {IFile} conf \n */\nfunction ReadFile(filePath, conf) {\n  try {\n    Object.keys(MIME_TYPE).some(lang => {\n      const rule = MIME_TYPE[lang];\n      if (rule.test(filePath)) {\n        conf.lang = lang;\n        return true;\n      } else {\n        return false;\n      }\n    });\n    const data = fs.readFileSync(filePath);\n    conf.data = data.toString();\n    console.log('ADD [FIR]:', filePath);\n  } catch (err) {\n    console.error('Read FILE Error:', filePath);\n    throw err;\n  }\n}\n\n/**\n * \n * @param {string} dir\n * @param {IFile} parentConf \n */\nfunction ReadDir(dir, parentConf) {\n  try {\n    const files = fs.readdirSync(dir);\n    if (!files || !files.length) return;\n    parentConf.children = parentConf.children || [];\n    searchFiles(files, parentConf.children, dir);\n    parentConf.children.sort(sortFiles);\n    console.log('ADD [DIR]:', dir);\n  } catch (err) {\n    console.error('Read DIR Error:', dir);\n    throw err;\n  }\n}\n\nmodule.exports = {\n  /**\n   * Add language support.\n   * @param {string} language e.g typescript\n   * @param {RegExp} testRule e.g /\\.tsx?$/\n   */\n  addRules (language, testRule) {\n    MIME_TYPE[language] = testRule;\n  },\n\n  /**\n   * Generate the file list.\n   * @param {string[]} files A file or dir name. not path.\n   * @param {string=} baseURL\n   */\n  makeList (files, baseURL) {\n    if (!files || !files.length) {\n      console.log('0 file found.')\n      return;\n    }\n    const outputList = [];\n    searchFiles(files, outputList, baseURL);\n    outputList.sort(sortFiles);\n    return {\n      /**\n       * @param {string} outputDir\n       * @param {string=} filename\n       */\n      toFile (outputDir, filename) {\n        if (!outputDir) { return; }\n        const outputFilename = path.resolve(outputDir, filename || 'file_searcher_data.json');\n        fs.writeFileSync(outputFilename, JSON.stringify(outputList, null, 2));\n      }\n    }\n  }  \n}\n"
+      }
+    ]
+  },
+  {
+    "filename": "package.json",
+    "lang": "json",
+    "data": "{\n  \"name\": \"my-code-viewer\",\n  \"version\": \"0.1.4\",\n  \"description\": \"view code in html.\",\n  \"main\": \"dist/main.js\",\n  \"scripts\": {\n    \"dev\": \"webpack-dev-server --mode development --inline --progress --config webpack.config.js\",\n    \"build\": \"rm -rf ./dist & node build/index.js\",\n    \"build-doc\": \"rm -rf ./docs & node build/doc.js\",\n    \"example\": \"rm -rf ./src/example.json & node build/local-example.js\"\n  },\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"git+https://github.com/evollhhan/my-code-viewer.git\"\n  },\n  \"bugs\": {\n    \"url\": \"https://github.com/evollhhan/my-code-viewer/issues\"\n  },\n  \"homepage\": \"https://github.com/evollhhan/my-code-viewer#readme\",\n  \"types\": \"./global.d.ts\",\n  \"author\": \"Pathen\",\n  \"license\": \"MIT\",\n  \"files\": [\n    \"dist\",\n    \"global.d.ts\"\n  ],\n  \"devDependencies\": {\n    \"@types/highlight.js\": \"^9.12.3\",\n    \"chalk\": \"^2.4.2\",\n    \"css-loader\": \"^3.2.0\",\n    \"friendly-errors-webpack-plugin\": \"^1.7.0\",\n    \"html-webpack-plugin\": \"^3.2.0\",\n    \"mini-css-extract-plugin\": \"^0.8.0\",\n    \"node-sass\": \"^4.12.0\",\n    \"ora\": \"^3.4.0\",\n    \"react\": \"^16.8.6\",\n    \"react-dom\": \"^16.8.6\",\n    \"sass\": \"^1.23.0\",\n    \"sass-loader\": \"^8.0.0\",\n    \"style-loader\": \"^1.0.0\",\n    \"ts-loader\": \"^6.0.4\",\n    \"typescript\": \"^3.5.3\",\n    \"webpack\": \"^4.38.0\",\n    \"webpack-cli\": \"^3.1.0\",\n    \"webpack-dev-server\": \"^3.1.0\",\n    \"highlight.js\": \"^9.15.10\"\n  }\n}\n"
+  }
+]

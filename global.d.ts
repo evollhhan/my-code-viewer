@@ -7,9 +7,12 @@ interface IFile {
   filePath?: string;
 }
 
+type IRenderer = (ele: HTMLPreElement, ...args: any[]) => void;
+
 declare var Codeviewer: {
   new (): typeof Codeviewer;
   rootNode: HTMLElement;
+  useRenderer(renderer: IRenderer): void;
   loadFiles(files: IFile[]): void;
 }
 

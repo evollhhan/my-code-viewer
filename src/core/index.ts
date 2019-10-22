@@ -1,4 +1,3 @@
-import HL from './lang-support';
 import './index.scss?raw';
 
 interface IRenderOptions {
@@ -21,16 +20,20 @@ interface IFileElementAttribute {
   fold?: string;
 }
 
+type IRenderer = (ele: HTMLPreElement, ...args: any[]) => void;
+
 export default class Codeviewer {
   public rootNode: HTMLElement;
+  public renderer: IRenderer | undefined | null;
   private content: HTMLPreElement;
   private currentTitle: HTMLElement;
+  private currentType: HTMLElement;
   private listElement: HTMLUListElement;
   private list: {
     [index: string]: IFile
   } = {};
 
-  constructor () {
+  constructor() {
     const rootNode = document.createElement('div');
     rootNode.className = 'code-viewer';
     rootNode.innerHTML = `
@@ -41,22 +44,27 @@ export default class Codeviewer {
         </div>
       </div>
       <div class="code-area">
-        <div class="section-title filename">Untitled</div>
+        <div class="section-title filename">
+          <span>Untitled</span>
+          <span>unknown</span>
+        </div>
         <pre></pre>
       </div>
     `;
     this.content = rootNode.querySelector('pre')!;
-    this.currentTitle = rootNode.querySelector('.filename') as HTMLElement;
     this.listElement = rootNode.querySelector('ul')! as HTMLUListElement;
+    const titleAreaNodes = rootNode.querySelectorAll('.filename span');
+    this.currentTitle = titleAreaNodes[0] as HTMLElement;
+    this.currentType = titleAreaNodes[1] as HTMLElement;
     this.rootNode = rootNode;
     this.bindEvents();
   }
 
-  private bindEvents () {
+  private bindEvents() {
     this.listElement.addEventListener('click', (e: any) => this.onFileClicked(e.target));
   }
 
-  private onFileClicked (target: HTMLElement) {
+  private onFileClicked(target: HTMLElement) {
     const data: IFileElementAttribute = (target.dataset as any);
     switch (data.role) {
       case 'dir':
@@ -73,7 +81,7 @@ export default class Codeviewer {
     }
   }
 
-  private createFileNode (file: IFile, depth: number) {
+  private createFileNode(file: IFile, depth: number) {
     const node = document.createElement('li');
     node.className = 'file-node';
     node.style.textIndent = depth + 'em';
@@ -93,30 +101,37 @@ export default class Codeviewer {
     return node;
   }
 
-  private parse (files: IFile[], parent: HTMLElement | DocumentFragment, fromPath: string, depth: number) {
-  files.map(file => {
-    const path = fromPath + file.filename;
+  private parse(files: IFile[], parent: HTMLElement | DocumentFragment, fromPath: string, depth: number) {
+    files.map(file => {
+      const path = fromPath + file.filename;
       this.list[path] = file;
       file.filePath = path;
       parent.appendChild(this.createFileNode(file, depth));
     });
   }
 
-  loadFiles (files: IFile[]) {
+  useRenderer (renderer: IRenderer) {
+    this.renderer = renderer;
+  }
+
+  loadFiles(files: IFile[]) {
     const frag = document.createDocumentFragment();
     this.parse(files, frag, '/', 1);
     this.listElement.appendChild(frag);
   }
 
-  render (codeText?: string, renderOptions?: IRenderOptions) {
+  render(codeText?: string, opt?: IRenderOptions) {
     if (!codeText) return;
-    renderOptions = {
-      ...{ filename: 'Untitled.ts', lang: 'text' },
-      ...renderOptions
+    opt = {
+      ...{ filename: 'Untitled.ts', lang: 'unknown' },
+      ...opt
     }
-    this.content.className = renderOptions.lang!;
+    this.content.className = opt.lang!;
     this.content.innerHTML = codeText;
-    this.currentTitle.textContent = renderOptions.filename!;
-    HL.highlightBlock(this.content);
+    this.currentTitle.textContent = opt.filename!;
+    this.currentType.textContent = opt.lang || 'unknown';
+    if (this.renderer) {
+      this.renderer(this.content);
+    }
   }
 }

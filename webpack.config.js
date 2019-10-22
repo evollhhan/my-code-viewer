@@ -3,12 +3,13 @@ const webpack = require('webpack')
 const HtmlWebPackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin');
+const rules = require('./build/rules');
 
 //
 // CONST
 // ---
 const PATH = p => path.resolve(__dirname, p);
-const PATH_DIST = PATH('./dist');
+const PATH_DIST = PATH('./docs');
 
 //
 // DevServer
@@ -30,49 +31,6 @@ const devServer = {
 };
 
 //
-// Rules
-// ----
-const rules = (IS_PROD) => [
-  {
-    test: /\.tsx?$/,
-    exclude: /node_modules/,
-    use: [{
-      loader: 'ts-loader',
-      options: {
-        transpileOnly: true
-      }
-    }]
-  },
-  {
-    test: /\.(scss|css)$/,
-    oneOf: [
-      {
-        resourceQuery: /raw/,
-        use: [
-          IS_PROD ? MiniCssExtractPlugin.loader : 'style-loader',
-          'css-loader',
-          'sass-loader'
-        ]
-      },
-      {
-        use: [
-          IS_PROD ? MiniCssExtractPlugin.loader : 'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              modules: {
-                localIdentName: IS_PROD ? '[hash:base64]' : '[hash:base64:4]_[local]'
-              }
-            },
-          },
-          'sass-loader'
-        ]
-      }
-    ]
-  }
-];
-
-//
 // Plugins
 // ---
 const plugins = (IS_PROD) => {
@@ -82,24 +40,22 @@ const plugins = (IS_PROD) => {
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': IS_PROD ? '"production"' : '"development"'
     }),
-    new FriendlyErrorsPlugin()
+    new FriendlyErrorsPlugin(),
+    new HtmlWebPackPlugin({
+      template: 'index.html',
+      filename: 'index.html'
+    })
   ];
 
   if (IS_PROD) {
     list.push(
       new MiniCssExtractPlugin({
-        filename: 'style.css'
+        filename: '[name].[hash:4].css'
       })
     )
   } else {
     list.push(
       new webpack.HotModuleReplacementPlugin()
-    );
-    list.push(
-      new HtmlWebPackPlugin({
-        template: 'index.html',
-        filename: 'index.html'
-      })
     );
   }
 
@@ -111,20 +67,16 @@ module.exports = (env, argv) => {
   const IS_PROD = argv.mode === 'production';
   // Export Config
   return {
-    entry: IS_PROD ? './src/@core/index.ts' : './src/index.ts',
+    entry: './src/index.ts',
     mode: argv.mode,
     output: {
       path: PATH_DIST,
-      filename: '[name].js',
-      publicPath: '/',
-      ...IS_PROD ? {
-        libraryTarget: 'umd',
-        library: 'Codeviewer',
-      }: null
+      filename: IS_PROD ? '[name].[hash:4].js' : '[name].js',
+      publicPath: IS_PROD ? '/my-code-viewer/' : ''
     },
     devtool: IS_PROD ? false : '#cheap-eval-source-map',
     resolve: {
-      extensions: ['.js', '.ts', '.ts', '.json']
+      extensions: ['.js', '.ts', '.json']
     },
     devServer,
     module: {

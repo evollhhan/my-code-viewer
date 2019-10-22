@@ -5,7 +5,9 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "webpack-dev-server --mode development --inline --progress --config webpack.config.js",
-    "build": "node build/index.js"
+    "build": "rm -rf ./dist & node build/index.js",
+    "build-doc": "rm -rf ./docs & node build/doc.js",
+    "example": "rm -rf ./src/example.json & node build/local-example.js"
   },
   "repository": {
     "type": "git",
